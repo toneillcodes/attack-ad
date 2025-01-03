@@ -51,20 +51,35 @@ nmap -sC -sV -p$ports $target -oN port-recon.txt
 
 echo "[*] Parsing port results and executing modules..."
 
-#smb --shares
-#--rid-brute
-#--users
-#--groups
-#--log
-
 if grep clock-skew port-recon.txt | cut -d ' ' -f 2; then
 	echo "[*] WARN: Clock skew detected in port recon results, attempting to sync with target..."
 	date && sudo ntpdate $target && date
 fi
 
+# SMB
+if grep -qE '^(139,)+|(,139,)|(,139$)' port-list.txt || grep -qE '^(445,)+|(,445,)|(,445$)' port-list.txt; then
+    echo "[*] Running SMB module."
+        echo "Testing NULL sessions"
+        echo "Testing NULL sessions:" >> smb-recon.txt
+        smbclient -L "\\\\$target" -U " "%" " >> smb-recon.txt
+        if grep "NT_STATUS_LOGON_FAILURE" smb-recon.txt; then
+            echo "NULL session check failed with NT_STATUS_LOGON_FAILURE" >> smb-recon.txt
+        else
+            echo "NULL session success!! (validation command: smbclient -L \\\\$target -U \" \"%\" \")" >> smb-recon.txt
+        fi
+        if [ ! -z $user ] && [ ! -z $password ]; then
+			echo "[*] Credentials detected, using ($user:$password) for SMB enumeration" >> smb-recon.txt
+			echo "[*] Running smbclient query"
+			smbclient -L "\\\\$target" -U "$user"%"$password" >> smb-recon.txt
+			echo "[*] Running smbmap query"
+			smbmap -u $user -p $password -H $target  >> smb-recon.txt
+        fi
+        echo "[*] SMB module complete."
+fi
+
 # LDAP
-if grep -qE '^(389,)+|(,389,)|(,389$)' port-list.txt; then
-        echo "[*] Running LDAP module."
+if grep -qE '^(389,)+|(,389,)|(,389$)' port-list.txt || grep -qE '^(636,)+|(,636,)|(,636$)' port-list.txt; then
+    echo "[*] Running LDAP module."
 	echo "[*] Running ldapsearch queries"
 	ldapsearch -H ldap://$target -x -s base -b '' "(objectClass=*)" "*" > ldap-info.txt 
 
@@ -99,10 +114,10 @@ if grep -qE '^(389,)+|(,389,)|(,389$)' port-list.txt; then
 		########################################
 		# Run NetExec
 		########################################
-		echo "[*] Running nxc LDAP enum with credentials $user:****** (nxc-recon.txt)"
+		echo "[*] Running nxc LDAP enum with credentials $user:$password (nxc-recon.txt)"
 		# clear the file and output the scan timestamp
 		echo "Scan timestamp: $timestamp" > nxc-recon.txt
-		echo "Running against target: $target with $user:****** (nxc-recon.txt)" >> nxc-recon.txt
+		echo "Running against target: $target with $user:$password (nxc-recon.txt)" >> nxc-recon.txt
 		echo "NXC Domain SID:" >> nxc-recon.txt
 		nxc ldap $target -u $user -p $password --get-sid >> nxc-recon.txt
 		echo "" >> nxc-recon.txt
