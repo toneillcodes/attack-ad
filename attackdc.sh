@@ -53,7 +53,10 @@ echo "[*] Parsing port results and executing modules..."
 
 if grep clock-skew port-recon.txt | cut -d ' ' -f 2; then
 	echo "[*] WARN: Clock skew detected in port recon results, attempting to sync with target..."
-	date && sudo ntpdate $target && date
+ 	echo "[*] WARN: Clock skew detected in port recon results, attempting to sync with target..." >> port-recon.txt
+	date && sudo ntpdate $target && date >> port-recon.txt
+ 	echo "[*] INFO: ntpdate complete."
+  	echo "[*] INFO: ntpdate complete." >> port-recon.txt
 fi
 
 # SMB
@@ -70,9 +73,18 @@ if grep -qE '^(139,)+|(,139,)|(,139$)' port-list.txt || grep -qE '^(445,)+|(,445
         if [ ! -z $user ] && [ ! -z $password ]; then
 			echo "[*] Credentials detected, using ($user:$password) for SMB enumeration" >> smb-recon.txt
 			echo "[*] Running smbclient query"
+   			echo "smbclient output:" >> smb-recon.txt
 			smbclient -L "\\\\$target" -U "$user"%"$password" >> smb-recon.txt
+   			echo "" >> smb-recon.txt
 			echo "[*] Running smbmap query"
+   			echo "smbmap output:" >> smb-recon.txt
 			smbmap -u $user -p $password -H $target  >> smb-recon.txt
+   			echo "" >> smb-recon.txt
+   			echo "Readable shares:" >> smb-recon.txt
+      			nxc smb $target -u $user -p $password --shares --filter-shares READ
+	 		echo "" >> smb-recon.txt
+    			echo "Writeable shares:" >> smb-recon.txt
+      			nxc smb $target -u $user -p $password --shares --filter-shares WRITE
         fi
         echo "[*] SMB module complete."
 fi
