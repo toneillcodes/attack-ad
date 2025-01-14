@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function printhelp() {
-        echo "Usage: $0 -t HOSTNMAE/IP [-u USERNAME] [-p PASSWORD] [-d DOMAIN]"
+        echo "Usage: $0 -t HOSTNAME/IP [-u USERNAME] [-p PASSWORD] [-d DOMAIN]"
 }
 
 if [ $# -eq 0 ]; then
