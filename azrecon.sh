@@ -77,6 +77,18 @@ else
         ifuserexists=$(echo $usercheck | grep -oE "IfExistsResult\":[0-9]," | cut -d ":," -f 2)
         echo "IfUserExists=$ifuserexists"
         echo "IfUserExists=$ifuserexists" >> az-recon-$domain-$timestamp.txt
+        # 1 - Does not exist in tenant
+        # 0 - Exists in tenant, auth via Azure
+        if [ $ifuserexists -eq 0 ]; then
+                echo "User $username exists in $domain ($tenantid)"
+                echo "User $username exists in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
+        elif [ $ifuserexists -eq 1 ]; then
+                echo "User $username does NOT exist in $domain ($tenantid)"
+                echo "User $username does NOT exist in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
+        else
+                echo "Unmapped result: $ifuserexists; User $username might not exist in $domain ($tenantid)"
+                echo "Unmapped result: $ifuserexists; User $username might not exist in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
+        fi
 fi
 
 echo "Done."
