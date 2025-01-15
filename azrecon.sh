@@ -68,7 +68,11 @@ echo "TenantId=$tenantid" >> az-recon-$domain-$timestamp.txt
 
 if [ -z $username ]; then
         echo "Username provided, checking $user@$domain"
+        echo "Username provided, checking $user@$domain" >> az-recon-$domain-$timestamp.txt
         usercheck=$(curl -s -X POST "https://login.microsoftonline.com/common/GetCredentialType" --data "{\"Username\":\"$user@$domain\"}")
+        ifuserexists=$(echo $usercheck | grep -oE "IfExistsResult\":[0-9]," | cut -d ":," -f 2)
+        echo "IfUserExists=$ifuserexists"
+        echo "IfUserExists=$ifuserexists" >> az-recon-$domain-$timestamp.txt
 fi
 
 echo "Done."
