@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function printhelp() {
-        echo "Usage: $0 -d DOMAIN"
+        echo "Usage: $0 -d DOMAIN -u USERNAME"
 }
 
 if [ $# -eq 0 ]; then
@@ -9,10 +9,14 @@ if [ $# -eq 0 ]; then
         exit 1
 fi
 
-while getopts "hd:" option; do
+while getopts "hd:u:" option; do
   case $option in
     d) # domain
       domain="$OPTARG"
+      ;;
+  case $option in
+    u) # domain
+      username="$OPTARG"
       ;;
     h) # help
      printhelp
@@ -61,5 +65,10 @@ echo "Collecting tenant info..."
 tenantid=$(curl -s https://login.microsoftonline.com/$domain/v2.0/.well-known/openid-configuration | cut -d "\"" -f 4 | cut -d "/" -f 4)
 echo "TenantID = $tenantid"
 echo "TenantId=$tenantid" >> az-recon-$domain-$timestamp.txt
+
+if [ -z $username ]; then
+        echo "Username provided, checking $user@$domain"
+        usercheck=$(curl -s -X POST "https://login.microsoftonline.com/common/GetCredentialType" --data "{\"Username\":\"$user@$domain\"}")
+fi
 
 echo "Done."
