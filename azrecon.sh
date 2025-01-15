@@ -14,8 +14,7 @@ while getopts "hd:u:" option; do
     d) # domain
       domain="$OPTARG"
       ;;
-  case $option in
-    u) # domain
+    u) # username
       username="$OPTARG"
       ;;
     h) # help
@@ -67,9 +66,14 @@ echo "TenantID = $tenantid"
 echo "TenantId=$tenantid" >> az-recon-$domain-$timestamp.txt
 
 if [ -z $username ]; then
-        echo "Username provided, checking $user@$domain"
-        echo "Username provided, checking $user@$domain" >> az-recon-$domain-$timestamp.txt
-        usercheck=$(curl -s -X POST "https://login.microsoftonline.com/common/GetCredentialType" --data "{\"Username\":\"$user@$domain\"}")
+        echo "No username provided"
+        echo "No username provided" >> az-recon-$domain-$timestamp.txt
+else
+        echo "Username provided, checking $username@$domain"
+        echo "Username provided, checking $username@$domain" >> az-recon-$domain-$timestamp.txt
+        usercheck=$(curl -s -X POST "https://login.microsoftonline.com/common/GetCredentialType" --data "{\"Username\":\"$username@$domain\"}")
+        echo "GetCredentialType:" >> az-recon-$domain-$timestamp.txt
+        echo $usercheck >> az-recon-$domain-$timestamp.txt
         ifuserexists=$(echo $usercheck | grep -oE "IfExistsResult\":[0-9]," | cut -d ":," -f 2)
         echo "IfUserExists=$ifuserexists"
         echo "IfUserExists=$ifuserexists" >> az-recon-$domain-$timestamp.txt
