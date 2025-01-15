@@ -65,31 +65,36 @@ tenantid=$(curl -s https://login.microsoftonline.com/$domain/v2.0/.well-known/op
 echo "TenantID = $tenantid"
 echo "TenantId=$tenantid" >> az-recon-$domain-$timestamp.txt
 
-if [ -z $username ]; then
-        echo "No username provided"
-        echo "No username provided" >> az-recon-$domain-$timestamp.txt
-else
-        echo "Username provided, checking $username@$domain"
-        echo "Username provided, checking $username@$domain" >> az-recon-$domain-$timestamp.txt
-        usercheck=$(curl -s -X POST "https://login.microsoftonline.com/common/GetCredentialType" --data "{\"Username\":\"$username@$domain\"}")
-        echo "GetCredentialType:" >> az-recon-$domain-$timestamp.txt
-        echo $usercheck >> az-recon-$domain-$timestamp.txt
-        ifuserexists=$(echo $usercheck | grep -oE "IfExistsResult\":[0-9]," | cut -d ":," -f 2)
-        echo "IfUserExists=$ifuserexists"
-        echo "IfUserExists=$ifuserexists" >> az-recon-$domain-$timestamp.txt
-        # The following may not be accurate for federated domains
-        # 1 - Does not exist in tenant
-        # 0 - Exists in tenant, auth via Azure
-        if [ $ifuserexists -eq 0 ]; then
-                echo "User $username exists in $domain ($tenantid)"
-                echo "User $username exists in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
-        elif [ $ifuserexists -eq 1 ]; then
-                echo "User $username does NOT exist in $domain ($tenantid)"
-                echo "User $username does NOT exist in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
+if [ $namespacetype == "Managed" ]; then
+        if [ -z $username ]; then
+                echo "No username provided, domain is Managed so user enumeration may be possible"
+                echo "No username provided, domain is Managed so user enumeration may be possible" >> az-recon-$domain-$timestamp.txt
         else
-                echo "Unmapped result: $ifuserexists; User $username might not exist in $domain ($tenantid)"
-                echo "Unmapped result: $ifuserexists; User $username might not exist in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
+                echo "Username provided, checking $username@$domain"
+                echo "Username provided, checking $username@$domain" >> az-recon-$domain-$timestamp.txt
+                usercheck=$(curl -s -X POST "https://login.microsoftonline.com/common/GetCredentialType" --data "{\"Username\":\"$username@$domain\"}")
+                echo "GetCredentialType:" >> az-recon-$domain-$timestamp.txt
+                echo $usercheck >> az-recon-$domain-$timestamp.txt
+                ifuserexists=$(echo $usercheck | grep -oE "IfExistsResult\":[0-9]," | cut -d ":," -f 2)
+                echo "IfUserExists=$ifuserexists"
+                echo "IfUserExists=$ifuserexists" >> az-recon-$domain-$timestamp.txt
+                # The following may not be accurate for federated domains
+                # 1 - Does not exist in tenant
+                # 0 - Exists in tenant, auth via Azure
+                if [ $ifuserexists -eq 0 ]; then
+                        echo "User $username exists in $domain ($tenantid)"
+                        echo "User $username exists in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
+                elif [ $ifuserexists -eq 1 ]; then
+                        echo "User $username does NOT exist in $domain ($tenantid)"
+                        echo "User $username does NOT exist in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
+                else
+                        echo "Unmapped result: $ifuserexists; User $username might not exist in $domain ($tenantid)"
+                        echo "Unmapped result: $ifuserexists; User $username might not exist in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
+                fi
         fi
+else
+        echo "Domain is not 'Managed', skipping user enumeration checks"
+        echo "Domain is not 'Managed', skipping user enumeration checks" >> az-recon-$domain-$timestamp.txt
 fi
 
 echo "Done."
