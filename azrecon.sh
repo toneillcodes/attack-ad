@@ -77,6 +77,7 @@ else
         ifuserexists=$(echo $usercheck | grep -oE "IfExistsResult\":[0-9]," | cut -d ":," -f 2)
         echo "IfUserExists=$ifuserexists"
         echo "IfUserExists=$ifuserexists" >> az-recon-$domain-$timestamp.txt
+        # The following may not be accurate for federated domains
         # 1 - Does not exist in tenant
         # 0 - Exists in tenant, auth via Azure
         if [ $ifuserexists -eq 0 ]; then
