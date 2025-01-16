@@ -40,61 +40,49 @@ format=xml
 echo "Collecting realm info..."
 realminfo=$(curl -s "https://login.microsoftonline.com/getuserrealm.srf?login=$domain&$format=1")
 touch az-recon-$domain-$timestamp.txt
+echo "RealmInfo:"
 echo $realminfo >> az-recon-$domain-$timestamp.txt
 echo "Parsed realm info:" >> az-recon-$domain-$timestamp.txt
 domainname=$(echo $realminfo | grep -oE '<DomainName>(.*)<\/DomainName>' | cut -d "><" -f 3)
-echo "DomainName = $domainname"
-echo "DomainName=$domainname" >> az-recon-$domain-$timestamp.txt
+echo "DomainName=$domainname" | tee -a az-recon-$domain-$timestamp.txt
 namespacetype=$(echo $realminfo | grep -oE '<NameSpaceType>(.*)<\/NameSpaceType>' | cut -d "><" -f 3)
-echo "NameSpaceType = $namespacetype"
-echo "NameSpaceType=$namespacetype" >> az-recon-$domain-$timestamp.txt
+echo "NameSpaceType=$namespacetype" | tee -a az-recon-$domain-$timestamp.txt
 fedbrandname=$(echo $realminfo | grep -oE '<FederationBrandName>(.*)<\/FederationBrandName>' | cut -d "><" -f 3)
-echo "FedBrandName = $fedbrandname"
-echo "FedBrandName=$fedbrandname" >> az-recon-$domain-$timestamp.txt
+echo "FedBrandName=$fedbrandname" | tee -a az-recon-$domain-$timestamp.txt
 if [ $namespacetype == "Federated" ]; then
         authurl=$(echo $realminfo | grep -oE '<AuthURL>(.*)<\/AuthURL>' | cut -d "><" -f 3)
-        echo "AuthURL = $authurl"
-        echo "AuthURL=$authurl" >> az-recon-$domain-$timestamp.txt
+        echo "AuthURL=$authurl" | tee -a az-recon-$domain-$timestamp.txt
         stsauthurl=$(echo $realminfo | grep -oE '<STSAuthURL>(.*)<\/STSAuthURL>' | cut -d "><" -f 3)
-        echo "STSAuthURL = $stsauthurl"
-        echo "STSAuthURL=$stsauthurl" >> az-recon-$domain-$timestamp.txt
+        echo "STSAuthURL=$stsauthurl" | tee -a az-recon-$domain-$timestamp.txt
 fi
 
 echo "Collecting tenant info..."
 tenantid=$(curl -s https://login.microsoftonline.com/$domain/v2.0/.well-known/openid-configuration | cut -d "\"" -f 4 | cut -d "/" -f 4)
-echo "TenantID = $tenantid"
-echo "TenantId=$tenantid" >> az-recon-$domain-$timestamp.txt
+echo "TenantID=$tenantid" | tee -a az-recon-$domain-$timestamp.txt
 
 if [ $namespacetype == "Managed" ]; then
-        if [ -z $username ]; then
-                echo "No username provided, domain is Managed so user enumeration may be possible"
-                echo "No username provided, domain is Managed so user enumeration may be possible" >> az-recon-$domain-$timestamp.txt
-        else
-                echo "Username provided, checking $username@$domain"
-                echo "Username provided, checking $username@$domain" >> az-recon-$domain-$timestamp.txt
-                usercheck=$(curl -s -X POST "https://login.microsoftonline.com/common/GetCredentialType" --data "{\"Username\":\"$username@$domain\"}")
-                echo "GetCredentialType:" >> az-recon-$domain-$timestamp.txt
-                echo $usercheck >> az-recon-$domain-$timestamp.txt
-                ifuserexists=$(echo $usercheck | grep -oE "IfExistsResult\":[0-9]," | cut -d ":," -f 2)
-                echo "IfUserExists=$ifuserexists"
-                echo "IfUserExists=$ifuserexists" >> az-recon-$domain-$timestamp.txt
-                # The following may not be accurate for federated domains
-                # 1 - Does not exist in tenant
-                # 0 - Exists in tenant, auth via Azure
-                if [ $ifuserexists -eq 0 ]; then
-                        echo "User $username exists in $domain ($tenantid)"
-                        echo "User $username exists in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
-                elif [ $ifuserexists -eq 1 ]; then
-                        echo "User $username does NOT exist in $domain ($tenantid)"
-                        echo "User $username does NOT exist in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
-                else
-                        echo "Unmapped result: $ifuserexists; User $username might not exist in $domain ($tenantid)"
-                        echo "Unmapped result: $ifuserexists; User $username might not exist in $domain ($tenantid)" >> az-recon-$domain-$timestamp.txt
-                fi
-        fi
+	if [ -z $username ]; then
+		echo "No username provided, domain is Managed so user enumeration may be possible" | tee -a az-recon-$domain-$timestamp.txt
+	else
+		echo "Username provided, checking $username@$domain" | tee -a az-recon-$domain-$timestamp.txt
+		usercheck=$(curl -s -X POST "https://login.microsoftonline.com/common/GetCredentialType" --data "{\"Username\":\"$username@$domain\"}")
+		echo "GetCredentialType:" >> az-recon-$domain-$timestamp.txt
+		echo $usercheck >> az-recon-$domain-$timestamp.txt
+		ifuserexists=$(echo $usercheck | grep -oE "IfExistsResult\":[0-9]," | cut -d ":," -f 2)
+		echo "IfUserExists=$ifuserexists" | tee -a az-recon-$domain-$timestamp.txt
+		# The following may not be accurate for federated domains
+		# 1 - Does not exist in tenant
+		# 0 - Exists in tenant, auth via Azure
+		if [ $ifuserexists -eq 0 ]; then
+				echo "User $username exists in $domain ($tenantid)" | tee -a az-recon-$domain-$timestamp.txt
+		elif [ $ifuserexists -eq 1 ]; then
+				echo "User $username does NOT exist in $domain ($tenantid)" | tee -a az-recon-$domain-$timestamp.txt
+		else
+				echo "Unmapped result: $ifuserexists; User $username might not exist in $domain ($tenantid)" | tee -a az-recon-$domain-$timestamp.txt
+		fi
+	fi
 else
-        echo "Domain is not 'Managed', skipping user enumeration checks"
-        echo "Domain is not 'Managed', skipping user enumeration checks" >> az-recon-$domain-$timestamp.txt
+    echo "Domain is not 'Managed', skipping user enumeration checks" | tee -a az-recon-$domain-$timestamp.txt
 fi
 
 echo "Done."
