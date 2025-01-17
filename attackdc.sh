@@ -54,23 +54,20 @@ nmap -sC -sV -p$ports $target -oN port-recon-$target.txt
 echo "[*] Parsing port results and executing modules..."
 
 if grep clock-skew port-recon-$target.txt | cut -d ' ' -f 2; then
-	echo "[*] WARN: Clock skew detected in port recon results, attempting to sync with target..."
- 	echo "[*] WARN: Clock skew detected in port recon results, attempting to sync with target..." >> port-recon-$target.txt
+	echo "[*] WARN: Clock skew detected in port recon results, attempting to sync with target..." | tee -a port-recon-$target.txt
 	date && sudo ntpdate $target && date >> port-recon-$target.txt
- 	echo "[*] INFO: ntpdate complete."
-  	echo "[*] INFO: ntpdate complete." >> port-recon-$target.txt
+ 	echo "[*] INFO: ntpdate complete." | tee -a port-recon-$target.txt
 fi
 
 # SMB
 if grep -qE '^(139,)+|(,139,)|(,139$)' port-list-$target.txt || grep -qE '^(445,)+|(,445,)|(,445$)' port-list-$target.txt; then
     echo "[*] Running SMB module."
-        echo "Testing NULL sessions"
-        echo "Testing NULL sessions:" >> smb-recon-$target-$timestamp.txt
+        echo "Testing NULL sessions" | tee -a smb-recon-$target-$timestamp.txt
         smbclient -L "\\\\$target" -U " "%" " >> smb-recon-$target-$timestamp.txt
         if grep "NT_STATUS_LOGON_FAILURE" smb-recon-$target-$timestamp.txt; then
             echo "NULL session check failed with NT_STATUS_LOGON_FAILURE" >> smb-recon-$target.txt
         else
-            echo "NULL session success!! (validation command: smbclient -L \\\\$target -U \" \"%\" \")" >> smb-recon-$target-$timestamp.txt
+            echo "NULL session success!! (validation command: smbclient -L \\\\$target -U \" \"%\" \")" | tee -a smb-recon-$target-$timestamp.txt
         fi
         if [ ! -z $user ] && [ ! -z $password ]; then
 			echo "[*] Credentials detected, using ($user:$password) for SMB enumeration" >> smb-recon-$target-$timestamp.txt
@@ -114,8 +111,7 @@ if grep -qE '^(389,)+|(,389,)|(,389$)' port-list-$target.txt || grep -qE '^(636,
 		if grep -qE "^TLS_REQCERT allow" /etc/ldap/ldap.conf; then
 			echo "[*] INFO: LDAP client setting found"
 		else
-			echo "[*] INFO: LDAP client setting not found, updating ldap.conf"
-			echo "[*] INFO: LDAP client setting not found, updating ldap.conf" >> ldap-recon.txt
+			echo "[*] INFO: LDAP client setting not found, updating ldap.conf" | tee -a ldap-recon.txt
 			sudo tee -a "TLS_REQCERT allow" >> /etc/ldap/ldap.conf
 		fi
 	
