@@ -1,4 +1,6 @@
 # attack-ad
+A collection of offensive security tools targeting Active Directory
+Disclaimer: Only to be used on systems you are authorized to access (attack).
 - attackcradle.sh: attack cradle to test or develop modules
 - attackdc.sh: enumeration against a domain controller
 - azrecon.sh: enumeration against a azure domain
