@@ -6,3 +6,6 @@ Disclaimer: Only to be used on systems you are authorized to access (attack).
 - azrecon.sh: enumeration against a azure domain
 - crackloot.sh: hashcat cracking script for automated cracking
 - dcconfidence.sh: evaluate open ports to determine whether or not a machine is a domain controller
+
+## TODO:
+- Add option to bypass port scan and read the port list from a file
